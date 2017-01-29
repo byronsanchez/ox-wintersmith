@@ -1,4 +1,4 @@
-;;; ox-jekyll-subtree.el --- Extension to ox-jexkyll for better export of subtrees   -*- lexical-binding: t; -*-
+;;; ox-wintersmith-subtree.el --- Extension to ox-jexkyll for better export of subtrees   -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2015  Artur Malabarba
 
@@ -21,7 +21,7 @@
 ;;; Commentary:
 ;;
 ;; Extension to ox-jexkyll for better export of subtrees. This is only
-;; possible thanks to `ox-jekyll`, from the
+;; possible thanks to `ox-wintersmith`, from the
 ;; [org-octopress](https://github.com/yoshinari-nomura/org-octopress)
 ;; repo (a copy is provided in this repo).
 ;;
@@ -34,8 +34,8 @@
 ;; Place this in your `load-path`, add the following lines to your init file, and invoke `M-x endless/export-to-blog` to export a subtree as a blog post.
 ;;
 ;; ```
-;; (autoload 'endless/export-to-blog "jekyll-once")
-;; (setq org-jekyll-use-src-plugin t)
+;; (autoload 'endless/export-to-blog "wintersmith-once")
+;; (setq org-wintersmith-use-src-plugin t)
 ;;
 ;; ;; Obviously, these two need to be changed for your blog.
 ;; (setq endless/blog-base-url "http://endlessparentheses.com/")
@@ -45,7 +45,7 @@
 ;;; Code:
 
 (require 'org)
-(require 'ox-jekyll)
+(require 'ox-wintersmith)
 (require 'subr-x)
 
 (defcustom endless/blog-dir (expand-file-name "~/Git-Projects/blog/")
@@ -60,11 +60,11 @@ Will be stripped from links addresses on the final HTML."
   :group 'endless)
 
 (defun endless/export-to-blog (dont-show)
-  "Exports current subtree as jekyll html and copies to blog.
+  "Exports current subtree as wintersmith html and copies to blog.
 Posts need very little to work, most information is guessed.
 Scheduled date is respected and heading is marked as DONE.
 
-Pages are marked by a \":EXPORT_JEKYLL_LAYOUT: page\" property,
+Pages are marked by a \":EXPORT_WINTERSMITH_LAYOUT: page\" property,
 and they also need a :filename: property. Schedule is then
 ignored, and the file is saved inside `endless/blog-dir'.
 
@@ -78,8 +78,8 @@ will be a sanitised version of the title, see
     ;; reach one.
     (while (null (org-entry-get (point) "TODO" nil t))
       (outline-up-heading 1 t))
-    (org-entry-put (point) "EXPORT_JEKYLL_LAYOUT"
-                   (org-entry-get (point) "EXPORT_JEKYLL_LAYOUT" t))
+    (org-entry-put (point) "EXPORT_WINTERSMITH_LAYOUT"
+                   (org-entry-get (point) "EXPORT_WINTERSMITH_LAYOUT" t))
     ;; Try the closed stamp first to make sure we don't set the front
     ;; matter to 00:00:00 which moves the post back a day
     (let* ((closed-stamp (org-entry-get (point) "CLOSED" t))
@@ -88,11 +88,11 @@ will be a sanitised version of the title, see
                    (org-get-scheduled-time (point) nil)))
            (tags (nreverse (org-get-tags-at)))
            (meta-title (org-entry-get (point) "meta_title"))
-           (is-page (string= (org-entry-get (point) "EXPORT_JEKYLL_LAYOUT") "page"))
+           (is-page (string= (org-entry-get (point) "EXPORT_WINTERSMITH_LAYOUT") "page"))
            (name (org-entry-get (point) "filename"))
            (title (org-get-heading t t))
            (series (org-entry-get (point) "series" t))
-           (org-jekyll-categories
+           (org-wintersmith-categories
             (mapconcat
              (lambda (tag) (endless/convert-tag tag))
              tags " "))
@@ -126,10 +126,10 @@ will be a sanitised version of the title, see
            header-content subtree-content reference-buffer)
 
           ;; Export and then do some fixing on the output buffer.
-          (org-jekyll-export-as-html nil t nil nil nil)
-          (with-current-buffer "*Org Jekyll HTML Export*"
+          (org-wintersmith-export-as-html nil t nil nil nil)
+          (with-current-buffer "*Org Wintersmith HTML Export*"
             (goto-char (point-min))
-            ;; Configure the jekyll header.
+            ;; Configure the wintersmith header.
             (search-forward "\n---\n")
             (goto-char (1+ (match-beginning 0)))
             (when series
@@ -244,5 +244,5 @@ And transforms anything that's not alphanumeric into dashes."
       (replace-regexp-in-string
        "(.*)" "" name))))))
 
-(provide 'ox-jekyll-subtree)
-;;; ox-jekyll-subtree.el ends here
+(provide 'ox-wintersmith-subtree)
+;;; ox-wintersmith-subtree.el ends here
