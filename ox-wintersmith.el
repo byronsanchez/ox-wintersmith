@@ -40,25 +40,31 @@ If false, then you should include the yaml front matter like this at the top of 
 
 #+BEGIN_HTML
 ---
-layout: post
-title: \"Upgrading Octopress\"
-date: 2013-09-15 22:08
-comments: true
-categories: [octopress, rubymine]
-keywords: Octopress
+template: article.jade
+title: \"Upgrading Wintersmith\"
+date: 2017-01-28 22:08
+comments_enabled: true
+category: Technology
+tags: [wintersmith, nodejs]
+publised: true
 description: Instructions on Upgrading Octopress
 ---
 #+END_HTML"
   :group 'org-export-wintersmith
   :type 'boolean)
 
-(defcustom org-wintersmith-layout "post"
+(defcustom org-wintersmith-layout "article.jade"
   "Default layout used in Wintersmith article."
   :group 'org-export-wintersmith
   :type 'string)
 
-(defcustom org-wintersmith-categories ""
-  "Default space-separated categories in Wintersmith article."
+(defcustom org-wintersmith-category ""
+  "Default space-separated category in Wintersmith article."
+  :group 'org-export-wintersmith
+  :type 'string)
+
+(defcustom org-wintersmith-tags ""
+  "Default space-separated tags in Wintersmith article."
   :group 'org-export-wintersmith
   :type 'string)
 
@@ -72,6 +78,25 @@ description: Instructions on Upgrading Octopress
   :group 'org-export-wintersmith
   :type 'string)
 
+;; TODO: This is pretty much useless right now, since I'm converting org-mode to
+;; HTML and not markdown. Maybe I'll find something I wanna use, so I'm leaving
+;; this here for now. But it's also likely that I end up using org-mode's export
+;; since wintersmith doesn't really have highlight plugins like jekyll does (ala
+;; Liquid).
+;;
+;; What jekyll does is it passes highlight blocks to a distinct parser seperate
+;; from the markdown parser. Markdown can go to the markdown parser, while
+;; highlight codeblocks can go to the Liquid extension. Thus, you can use
+;; markdown + liquid or html + liquid.
+;;
+;; Wintersmith, on the other hand, provides syntax highlighting via a markdown
+;; parse plugin. The nodejs plugin for markdown calls highlight.js and passes
+;; markdown codeblocks to it. Anything crazier goes to the markdown parser
+;; directly.
+;;
+;; Since we're parsing org-mode to HTML, it'd probably be easiest to just have
+;; org-export render codeblocks for me. But just in case I hate the output, I'm
+;; keeping all this info here as backup.
 (defcustom org-wintersmith-use-src-plugin nil
   "If t, org-wintersmith exporter eagerly uses plugins instead of
 org-mode's original HTML stuff. For example:
@@ -82,9 +107,9 @@ org-mode's original HTML stuff. For example:
 
 makes:
 
-  {% highlight ruby %}
+  ```ruby
   puts \"Hello world\"
-  {% endhighlight %}"
+  ```"
   :group 'org-export-wintersmith-use-src-plugin
   :type 'boolean)
 
@@ -103,7 +128,8 @@ makes:
     (inner-template . org-wintersmith-inner-template)) ;; force body-only
   :options-alist
   '((:wintersmith-layout "WINTERSMITH_LAYOUT" nil org-wintersmith-layout)
-    (:wintersmith-categories "WINTERSMITH_CATEGORIES" nil org-wintersmith-categories)
+    (:wintersmith-category "WINTERSMITH_CATEGORY" nil org-wintersmith-category)
+    (:wintersmith-tags "WINTERSMITH_TAGS" nil org-wintersmith-tags)
     (:wintersmith-published "WINTERSMITH_PUBLISHED" nil org-wintersmith-published)
     (:wintersmith-comments "WINTERSMITH_COMMENTS" nil org-wintersmith-comments)))
 
@@ -118,7 +144,7 @@ INFO is a plist used as a communication channel."
       (let ((language (org-element-property :language src-block))
             (value (org-remove-indentation
                     (org-element-property :value src-block))))
-        (format "{%% highlight %s %%}\n%s{%% endhighlight %%}"
+        (format "```%s\n%s\n```"
                 (replace-regexp-in-string
                  "emacs-lisp" "cl"
                  (format "%s" language)) value))
@@ -163,14 +189,19 @@ holding export options."
          (org-wintersmith--get-option info :date))
         (layout
          (org-wintersmith--get-option info :wintersmith-layout org-wintersmith-layout))
-        (categories
-         (org-wintersmith--get-option info :wintersmith-categories org-wintersmith-categories)))
+        (category
+         (org-wintersmith--get-option info :wintersmith-category org-wintersmith-category))
+        (tags
+         (org-wintersmith--get-option info :wintersmith-tags org-wintersmith-tags))
+        )
     (concat
      "---"
      "\ntitle: \""    title
+     ;; This is NOT a typo. It's quoting title.
      "\"\ndate: "     date
      "\nlayout: "     layout
-     "\ntags: " categories
+     "\ncategory: " category
+     "\ntags: " tags
      "\n---\n")))
 
 ;;; Filename and Date Helper
@@ -274,19 +305,21 @@ Return output file name."
 
 ;;;###autoload
 (defun org-wintersmith-insert-export-options-template
-    (&optional title date setupfile categories published layout)
+    (&optional title date setupfile category tags published layout)
   "Insert a settings template for Wintersmith exporter."
   (interactive)
   (let ((layout     (or layout org-wintersmith-layout))
         (published  (or published org-wintersmith-published))
-        (categories (or categories org-wintersmith-categories)))
+        (category (or category org-wintersmith-category))
+        (tags  (or published org-wintersmith-tags)))
     (save-excursion
       (insert (format (concat
                        "#+TITLE: "             title
                        "\n#+DATE: "              date
                        "\n#+SETUPFILE: "         setupfile
                        "\n#+WINTERSMITH_LAYOUT: "     layout
-                       "\n#+WINTERSMITH_CATEGORIES: " categories
+                       "\n#+WINTERSMITH_CATEGORY: " category
+                       "\n#+WINTERSMITH_TAGS: " tags
                        "\n#+WINTERSMITH_PUBLISHED: "  published
                        "\n\n* \n\n{{{more}}}"))))))
 
