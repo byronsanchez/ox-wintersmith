@@ -1,4 +1,4 @@
-;;; ox-wintersmith-subtree.el --- Extension to ox-jexkyll for better export of subtrees   -*- lexical-binding: t; -*-
+;;; ox-wintersmith-subtree.el --- Extension to ox-wintersmith for better export of subtrees   -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2015  Artur Malabarba
 
@@ -20,7 +20,7 @@
 
 ;;; Commentary:
 ;;
-;; Extension to ox-jexkyll for better export of subtrees. This is only
+;; Extension to ox-wintersmith for better export of subtrees. This is only
 ;; possible thanks to `ox-wintersmith`, from the
 ;; [org-octopress](https://github.com/yoshinari-nomura/org-octopress)
 ;; repo (a copy is provided in this repo).
