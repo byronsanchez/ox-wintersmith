@@ -145,7 +145,7 @@ will be a sanitised version of the title, see
             ;; Save the final file.
             (nitelite/clean-output-links)
             (let ((out-file
-                   (expand-file-name (concat (if is-page "" "_posts/") name ".html")
+                   (expand-file-name (concat (if is-page "" "notebooks/") name ".html")
                                      nitelite/blog-dir)))
               (write-file out-file)
               (unless dont-show
