@@ -31,15 +31,15 @@
 ;;
 ;;; Usage
 ;;
-;; Place this in your `load-path`, add the following lines to your init file, and invoke `M-x endless/export-to-blog` to export a subtree as a blog post.
+;; Place this in your `load-path`, add the following lines to your init file, and invoke `M-x nitelite/export-to-blog` to export a subtree as a blog post.
 ;;
 ;; ```
-;; (autoload 'endless/export-to-blog "wintersmith-once")
+;; (autoload 'nitelite/export-to-blog "wintersmith-once")
 ;; (setq org-wintersmith-use-src-plugin t)
 ;;
 ;; ;; Obviously, these two need to be changed for your blog.
-;; (setq endless/blog-base-url "http://endlessparentheses.com/")
-;; (setq endless/blog-dir (expand-file-name "~/Git-Projects/blog/"))
+;; (setq nitelite/blog-base-url "https://nitelite.io/")
+;; (setq nitelite/blog-dir (expand-file-name "~/projects/byronsanchez/nitelite.io/contents/"))
 ;; ```
 
 ;;; Code:
@@ -48,7 +48,7 @@
 (require 'ox-wintersmith)
 (require 'subr-x)
 
-(defcustom nitelite/blog-dir (expand-file-name "~/projects/byronsanchez/nitelite.io/contents/posts/")
+(defcustom nitelite/blog-dir (expand-file-name "~/projects/byronsanchez/nitelite.io/contents/")
   "Directory to save posts."
   :type 'directory
   :group 'nitelite)
@@ -58,48 +58,6 @@
 Will be stripped from links addresses on the final HTML."
   :type 'string
   :group 'nitelite)
-
-(defun nitelite/org-export-all (backend blog-tag)
-  "Export all subtrees that are *not* tagged with :noexport: to
-separate files.
-
-Subtrees that do not have the :EXPORT_FILE_NAME: property set
-are exported to a filename derived from the headline text."
-    (save-excursion
-      ;; (set-mark (point-min))
-      ;;  (goto-char (point-max))
-      (org-map-entries
-       (lambda ()
-         (let ((export-file (org-entry-get (point) "EXPORT_FILE_NAME")))
-           (unless export-file
-             (org-set-property
-              "EXPORT_FILE_NAME"
-              ;; This function generates the export filename by replacing spaces
-              ;; with _ in the headline text.
-              ;;
-              ;; You can change =replace-regexp-in-string= to whatever you like
-              ;; (eg. your own handleize function)
-              (replace-regexp-in-string " " "_" (nth 4 (org-heading-components)))))
-           (funcall fn nil t)
-           (unless export-file (org-delete-property "EXPORT_FILE_NAME"))
-           (set-buffer-modified-p modifiedp)))
-       blog-tag nil)
-
-      ))
-
-(defun nitelite/export-nitelite (backend)
-  "Export all subtrees that are *not* tagged with :noexport: to
-separate files.
-
-Subtrees that do not have the :EXPORT_FILE_NAME: property set
-are exported to a filename derived from the headline text."
-  (interactive "sEnter backend: ")
-  (let ((fn (cond ((equal backend "html") 'org-html-export-to-html)
-                  ((equal backend "markdown") 'org-md-export-to-markdown)
-                  ((equal backend "latex") 'org-latex-export-to-latex)
-                  ((equal backend "pdf") 'org-latex-export-to-pdf)))
-        (modifiedp (buffer-modified-p)))
-    (nitelite/org-export-all backend "NITELITE & EXPORT")))
 
 (defun nitelite/export-to-blog (dont-show)
   "Exports current subtree as wintersmith html and copies to blog.
@@ -285,6 +243,48 @@ And transforms anything that's not alphanumeric into dashes."
      (string-trim
       (replace-regexp-in-string
        "(.*)" "" name))))))
+
+; (defun nitelite/org-export-all (backend blog-tag)
+;   "Export all subtrees that are *not* tagged with :noexport: to
+; separate files.
+;
+; Subtrees that do not have the :EXPORT_FILE_NAME: property set
+; are exported to a filename derived from the headline text."
+;     (save-excursion
+;       ;; (set-mark (point-min))
+;       ;;  (goto-char (point-max))
+;       (org-map-entries
+;        (lambda ()
+;          (let ((export-file (org-entry-get (point) "EXPORT_FILE_NAME")))
+;            (unless export-file
+;              (org-set-property
+;               "EXPORT_FILE_NAME"
+;               ;; This function generates the export filename by replacing spaces
+;               ;; with _ in the headline text.
+;               ;;
+;               ;; You can change =replace-regexp-in-string= to whatever you like
+;               ;; (eg. your own handleize function)
+;               (replace-regexp-in-string " " "_" (nth 4 (org-heading-components)))))
+;            (funcall fn nil t)
+;            (unless export-file (org-delete-property "EXPORT_FILE_NAME"))
+;            (set-buffer-modified-p modifiedp)))
+;        blog-tag nil)
+;
+;       ))
+
+; (defun nitelite/export-nitelite (backend)
+;   "Export all subtrees that are *not* tagged with :noexport: to
+; separate files.
+;
+; Subtrees that do not have the :EXPORT_FILE_NAME: property set
+; are exported to a filename derived from the headline text."
+;   (interactive "sEnter backend: ")
+;   (let ((fn (cond ((equal backend "html") 'org-html-export-to-html)
+;                   ((equal backend "markdown") 'org-md-export-to-markdown)
+;                   ((equal backend "latex") 'org-latex-export-to-latex)
+;                   ((equal backend "pdf") 'org-latex-export-to-pdf)))
+;         (modifiedp (buffer-modified-p)))
+;     (nitelite/org-export-all backend "NITELITE & EXPORT")))
 
 (provide 'ox-wintersmith-subtree)
 ;;; ox-wintersmith-subtree.el ends here
