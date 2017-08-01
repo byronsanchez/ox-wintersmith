@@ -53,8 +53,8 @@ description: Instructions on Upgrading Octopress
   :group 'org-export-wintersmith
   :type 'boolean)
 
-(defcustom org-wintersmith-layout "article.jade"
-  "Default layout used in Wintersmith article."
+(defcustom org-wintersmith-template "article.jade"
+  "Default template used in Wintersmith article."
   :group 'org-export-wintersmith
   :type 'string)
 
@@ -127,7 +127,7 @@ makes:
     (src-block . org-wintersmith-src-block)
     (inner-template . org-wintersmith-inner-template)) ;; force body-only
   :options-alist
-  '((:wintersmith-layout "WINTERSMITH_LAYOUT" nil org-wintersmith-layout)
+  '((:wintersmith-template "WINTERSMITH_TEMPLATE" nil org-wintersmith-template)
     (:wintersmith-category "WINTERSMITH_CATEGORY" nil org-wintersmith-category)
     (:wintersmith-tags "WINTERSMITH_TAGS" nil org-wintersmith-tags)
     (:wintersmith-published "WINTERSMITH_PUBLISHED" nil org-wintersmith-published)
@@ -187,21 +187,28 @@ holding export options."
          (org-wintersmith--get-option info :title))
         (date
          (org-wintersmith--get-option info :date))
-        (layout
-         (org-wintersmith--get-option info :wintersmith-layout org-wintersmith-layout))
+        (template
+         (org-wintersmith--get-option info :wintersmith-template org-wintersmith-template))
         (category
          (org-wintersmith--get-option info :wintersmith-category org-wintersmith-category))
         (tags
          (org-wintersmith--get-option info :wintersmith-tags org-wintersmith-tags))
         )
+
+    ;; TODO: Make these into variables you can configure
     (concat
      "---"
+     "\ncategory: " category
+     "\ncomments_enabled: 1"
+     "\ndescription: 0"
      "\ntitle: \""    title
      ;; This is NOT a typo. It's quoting title.
      "\"\ndate: "     date
-     "\nlayout: "     layout
-     "\ncategory: " category
      "\ntags: " tags
+     "\nauthor: niteLite"
+     "\ntemplate: "     template
+     "\npublished: 1"
+     "\nnotebook: journal"
      "\n---\n")))
 
 ;;; Filename and Date Helper
@@ -305,10 +312,10 @@ Return output file name."
 
 ;;;###autoload
 (defun org-wintersmith-insert-export-options-template
-    (&optional title date setupfile category tags published layout)
+    (&optional title date setupfile category tags published template)
   "Insert a settings template for Wintersmith exporter."
   (interactive)
-  (let ((layout     (or layout org-wintersmith-layout))
+  (let ((template     (or template org-wintersmith-template))
         (published  (or published org-wintersmith-published))
         (category (or category org-wintersmith-category))
         (tags  (or published org-wintersmith-tags)))
@@ -317,7 +324,7 @@ Return output file name."
                        "#+TITLE: "             title
                        "\n#+DATE: "              date
                        "\n#+SETUPFILE: "         setupfile
-                       "\n#+WINTERSMITH_LAYOUT: "     layout
+                       "\n#+WINTERSMITH_TEMPLATE: "     template
                        "\n#+WINTERSMITH_CATEGORY: " category
                        "\n#+WINTERSMITH_TAGS: " tags
                        "\n#+WINTERSMITH_PUBLISHED: "  published
