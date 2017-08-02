@@ -80,12 +80,18 @@ will be a sanitised version of the title, see
       (outline-up-heading 1 t))
     (org-entry-put (point) "EXPORT_WINTERSMITH_TEMPLATE"
                    (org-entry-get (point) "EXPORT_WINTERSMITH_TEMPLATE" t))
-    ;; Try the closed stamp first to make sure we don't set the front
+    ;; Try inactive timestamp first
+    ;; THEN:
+    ;; Try the closed stamp to make sure we don't set the front
     ;; matter to 00:00:00 which moves the post back a day
     (let* ((closed-stamp (org-entry-get (point) "CLOSED" t))
-           (date (if closed-stamp
+           (ia-stamp (org-entry-get (point) "TIMESTAMP_IA" t))
+           (date (if ia-stamp
+                     (date-to-time ia-stamp)
+                   (if closed-stamp
                      (date-to-time closed-stamp)
-                   (org-get-scheduled-time (point) nil)))
+                    (org-get-scheduled-time (point) nil))
+                   ))
            (tags (nreverse (org-get-tags-at)))
            (meta-title (org-entry-get (point) "meta_title"))
            (is-page (string= (org-entry-get (point) "EXPORT_WINTERSMITH_TEMPLATE") "page"))

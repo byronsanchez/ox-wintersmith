@@ -79,8 +79,7 @@ description: Instructions on Upgrading Octopress
   :type 'string)
 
 (defcustom org-wintersmith-description 0
-  "A one-liner description to display in place of summary
-text or the full post on index pages."
+  "A one-liner description to display in place of summary text or the full post on index pages."
   :group 'org-export-wintersmith
   :type 'string)
 
@@ -130,11 +129,11 @@ makes:
         (?h "As HTML file" org-wintersmith-export-to-html)))
   :translate-alist
   '((template . org-wintersmith-template) ;; add YAML front matter.
-    (plain-text . org-wintersmith-plain-text)
     (src-block . org-wintersmith-src-block)
     (inner-template . org-wintersmith-inner-template)) ;; force body-only
   :options-alist
-  '((:wintersmith-template "WINTERSMITH_TEMPLATE" nil org-wintersmith-template)
+  '(
+    (:wintersmith-template "WINTERSMITH_TEMPLATE" nil org-wintersmith-template)
     (:wintersmith-category "WINTERSMITH_CATEGORY" nil org-wintersmith-category)
     (:wintersmith-tags "WINTERSMITH_TAGS" nil org-wintersmith-tags)
     (:wintersmith-published "WINTERSMITH_PUBLISHED" nil org-wintersmith-published)
@@ -170,14 +169,6 @@ holding export options."
        contents)
     contents))
 
-;;; Plain Text
-(defun org-wintersmith-plain-text (text info)
-  "Return valid plain-text values that are not associated
-with any other translation function. Currently, this is only the more mark."
-  (if (string= text "#+MORE")
-    "<!--more-->"
-    nil))
-
 (defun org-wintersmith-inner-template (contents info)
   "Return body of document string after HTML conversion.
 CONTENTS is the transcoded contents string.  INFO is a plist
@@ -202,10 +193,10 @@ holding export options."
 (defun org-wintersmith--yaml-front-matter (info)
   (let ((title
          (org-wintersmith--get-option info :title))
-        (author
-         (org-wintersmith--get-option info :author))
         (date
          (org-wintersmith--get-option info :date))
+        (author
+         (org-wintersmith--get-option info :author))
         (template
          (org-wintersmith--get-option info :wintersmith-template org-wintersmith-template))
         (category
@@ -223,14 +214,14 @@ holding export options."
     ;; TODO: Make these into variables you can configure
     (concat
      "---"
+     "\ndate: "     date
      "\ntitle: \""    title
      ;; This is NOT a typo. It's quoting title.
-     "\"\ndate: "     date
-     "\nauthor: " author
+     "\"\nauthor: " author
      "\ncategory: " category
      "\ntags: " tags
-     "\ncomments_enabled: " comments
      "\npublished: " published
+     "\ncomments_enabled: " comments
      "\ntemplate: "     template
      "\ndescription: " description
      "\n---\n")))
