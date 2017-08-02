@@ -58,23 +58,29 @@ description: Instructions on Upgrading Octopress
   :group 'org-export-wintersmith
   :type 'string)
 
-(defcustom org-wintersmith-category ""
+(defcustom org-wintersmith-category "other"
   "Default space-separated category in Wintersmith article."
   :group 'org-export-wintersmith
   :type 'string)
 
-(defcustom org-wintersmith-tags ""
+(defcustom org-wintersmith-tags "tagless"
   "Default space-separated tags in Wintersmith article."
   :group 'org-export-wintersmith
   :type 'string)
 
-(defcustom org-wintersmith-published "true"
+(defcustom org-wintersmith-published 0
   "Default publish status in Wintersmith article."
   :group 'org-export-wintersmith
   :type 'string)
 
-(defcustom org-wintersmith-comments ""
+(defcustom org-wintersmith-comments 0
   "Default comments (disqus) flag in Wintersmith article."
+  :group 'org-export-wintersmith
+  :type 'string)
+
+(defcustom org-wintersmith-description 0
+  "A one-liner description to display in place of summary
+text or the full post on index pages."
   :group 'org-export-wintersmith
   :type 'string)
 
@@ -124,6 +130,7 @@ makes:
         (?h "As HTML file" org-wintersmith-export-to-html)))
   :translate-alist
   '((template . org-wintersmith-template) ;; add YAML front matter.
+    (plain-text . org-wintersmith-plain-text)
     (src-block . org-wintersmith-src-block)
     (inner-template . org-wintersmith-inner-template)) ;; force body-only
   :options-alist
@@ -131,7 +138,9 @@ makes:
     (:wintersmith-category "WINTERSMITH_CATEGORY" nil org-wintersmith-category)
     (:wintersmith-tags "WINTERSMITH_TAGS" nil org-wintersmith-tags)
     (:wintersmith-published "WINTERSMITH_PUBLISHED" nil org-wintersmith-published)
-    (:wintersmith-comments "WINTERSMITH_COMMENTS" nil org-wintersmith-comments)))
+    (:wintersmith-comments "WINTERSMITH_COMMENTS" nil org-wintersmith-comments)
+    (:wintersmith-description "WINTERSMITH_DESCRIPTION" nil org-wintersmith-description)
+    ))
 
 
 ;;; Internal Filters
@@ -161,6 +170,14 @@ holding export options."
        contents)
     contents))
 
+;;; Plain Text
+(defun org-wintersmith-plain-text (text info)
+  "Return valid plain-text values that are not associated
+with any other translation function. Currently, this is only the more mark."
+  (if (string= text "#+MORE")
+    "<!--more-->"
+    nil))
+
 (defun org-wintersmith-inner-template (contents info)
   "Return body of document string after HTML conversion.
 CONTENTS is the transcoded contents string.  INFO is a plist
@@ -185,6 +202,8 @@ holding export options."
 (defun org-wintersmith--yaml-front-matter (info)
   (let ((title
          (org-wintersmith--get-option info :title))
+        (author
+         (org-wintersmith--get-option info :author))
         (date
          (org-wintersmith--get-option info :date))
         (template
@@ -193,22 +212,27 @@ holding export options."
          (org-wintersmith--get-option info :wintersmith-category org-wintersmith-category))
         (tags
          (org-wintersmith--get-option info :wintersmith-tags org-wintersmith-tags))
+        (published
+         (org-wintersmith--get-option info :wintersmith-published org-wintersmith-published))
+        (comments
+         (org-wintersmith--get-option info :wintersmith-comments org-wintersmith-comments))
+        (description
+         (org-wintersmith--get-option info :wintersmith-description org-wintersmith-description))
         )
 
     ;; TODO: Make these into variables you can configure
     (concat
      "---"
-     "\ncategory: " category
-     "\ncomments_enabled: 1"
-     "\ndescription: 0"
      "\ntitle: \""    title
      ;; This is NOT a typo. It's quoting title.
      "\"\ndate: "     date
+     "\nauthor: " author
+     "\ncategory: " category
      "\ntags: " tags
-     "\nauthor: niteLite"
+     "\ncomments_enabled: " comments
+     "\npublished: " published
      "\ntemplate: "     template
-     "\npublished: 1"
-     "\nnotebook: journal"
+     "\ndescription: " description
      "\n---\n")))
 
 ;;; Filename and Date Helper
