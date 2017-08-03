@@ -190,6 +190,7 @@ will be a sanitised version of the title, see
     (replace-match "href=\"/" :fixedcase :literal))
   (goto-char (point-min)))
 
+;; TODO: Fix the bug here where if there's no newline after a link, it crashes
 (defun nitelite/prepare-input-buffer (header content reference-buffer)
   "Insert content and clean it up a bit."
   (insert header content)
