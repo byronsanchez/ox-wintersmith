@@ -120,7 +120,7 @@ will be a sanitised version of the title, see
         ;; properties.
         ;; Define a name, if there isn't one.
         (unless name
-          (setq name (concat (format-time-string "%Y-%m-%d" date) "-" (nitelite/sanitise-file-name title)))
+          (setq name (concat (format-time-string "%Y-%m-%d" date) "-" (nitelite/handleize-file-name title)))
           (org-entry-put (point) "filename" name))
         (org-todo 'done))
 
@@ -255,6 +255,23 @@ And transforms anything that's not alphanumeric into dashes."
      (string-trim
       (replace-regexp-in-string
        "(.*)" "" name))))))
+
+(defun nitelite/handleize-file-name(name)
+  "Make NAME safe for filenames.
+Removes any occurrence of parentheses (with their content),
+Trims the result,
+And transforms anything that's not alphanumeric into dashes."
+  (require 'url-util)
+  (require 'subr-x)
+  (url-hexify-string
+   (downcase
+    (replace-regexp-in-string
+     "[^[:word:]-]" ""
+      (replace-regexp-in-string
+       "[[:space:]]" "-"
+       (string-trim
+        (replace-regexp-in-string
+         "(.*)" "" name)))))))
 
 ; (defun nitelite/org-export-all (backend blog-tag)
 ;   "Export all subtrees that are *not* tagged with :noexport: to
