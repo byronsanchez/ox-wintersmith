@@ -80,11 +80,15 @@ will be a sanitised version of the title, see
       (outline-up-heading 1 t))
     (org-entry-put (point) "EXPORT_WINTERSMITH_TEMPLATE"
                    (org-entry-get (point) "EXPORT_WINTERSMITH_TEMPLATE" t))
-    ;; Try inactive timestamp first
-    ;; THEN:
-    ;; Try the closed stamp to make sure we don't set the front
-    ;; matter to 00:00:00 which moves the post back a day
-    (let* ((closed-stamp (org-entry-get (point) "CLOSED" t))
+    (let* (
+           ;; custom-id takes precedence over generated ids
+           (custom-id (org-entry-get (point) "CUSTOM_ID" t))
+           (id (org-id-get-create))
+           ;; Try inactive timestamp first
+           ;; THEN:
+           ;; Try the closed stamp to make sure we don't set the front
+           ;; matter to 00:00:00 which moves the post back a day
+           (closed-stamp (org-entry-get (point) "CLOSED" t))
            (ia-stamp (org-entry-get (point) "TIMESTAMP_IA" t))
            (date (if ia-stamp
                      (date-to-time ia-stamp)
@@ -107,6 +111,7 @@ will be a sanitised version of the title, see
       (unless date
         (org-schedule nil ".")
         (setq date (current-time)))
+
       ;; For pages, demand filename.
       (if is-page
           (if (null name)

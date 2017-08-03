@@ -190,7 +190,25 @@ holding export options."
   (let ((property (org-export-data (plist-get info property-name) info)))
     (format "%s" (or property default ""))))
 
+;; Dig throw the parse-tree in the info plist and find the node-property
+;; containing the ID property for the article
+(defun org-wintersmith--get-id (info &optional default)
+	(let ((the-parse-tree (plist-get info :parse-tree)))
+        (let ((vals (org-element-map the-parse-tree 'node-property
+                  (lambda (np)
+                    (if (string= (org-element-property :key np) "ID")
+                        (org-element-property :value np)
+                        ;;(format "%s" (or (org-element-property :value np) default ""))
+                      )))))
+
+        ;; org-element-map gives us a list of values
+        ;; since if there are multiple IDs, they'll all be the same, and since
+        ;; we only limit 1 ID per article, the first element of the list is what
+        ;; we pick.
+        (format "%s" (or (car vals) default "")))))
+
 (defun org-wintersmith--yaml-front-matter (info)
+
   (let ((title
          (org-wintersmith--get-option info :title))
         (date
@@ -209,9 +227,10 @@ holding export options."
          (org-wintersmith--get-option info :wintersmith-comments org-wintersmith-comments))
         (description
          (org-wintersmith--get-option info :wintersmith-description org-wintersmith-description))
+        (id
+         (org-wintersmith--get-id info))
         )
 
-    ;; TODO: Make these into variables you can configure
     (concat
      "---"
      "\ndate: "     date
@@ -224,7 +243,10 @@ holding export options."
      "\ncomments_enabled: " comments
      "\ntemplate: "     template
      "\ndescription: " description
-     "\n---\n")))
+     "\nid: " id
+     "\n---\n"))
+
+  )
 
 ;;; Filename and Date Helper
 (defun org-wintersmith-date-from-filename (&optional filename)
