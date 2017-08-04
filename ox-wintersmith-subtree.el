@@ -59,6 +59,11 @@ Will be stripped from links addresses on the final HTML."
   :type 'string
   :group 'nitelite)
 
+(defcustom nitelite/export-all-constraint "+TODO=\"DONE\""
+  "An org-mode search constraint to determine which headlines in a file get exported when using `nitelite/export-all`"
+  :group 'org-export-wintersmith
+  :type 'string)
+
 (defun nitelite/export-to-blog (dont-show &optional dont-validate)
   "Exports current subtree as wintersmith html and copies to blog.
 Posts need very little to work, most information is guessed.
@@ -294,7 +299,7 @@ are exported to a filename derived from the headline text."
     (org-map-entries
      (lambda ()
          (funcall 'nitelite/export-to-blog t t)
-         ) "+TODO=\"DONE\"" nil)))
+         ) nitelite/export-all-constraint nil)))
 
 ; (defun nitelite/org-export-all (backend blog-tag)
 ;   "Export all subtrees that are *not* tagged with :noexport: to
