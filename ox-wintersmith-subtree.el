@@ -59,7 +59,7 @@ Will be stripped from links addresses on the final HTML."
   :type 'string
   :group 'nitelite)
 
-(defun nitelite/export-to-blog (dont-show dont-validate)
+(defun nitelite/export-to-blog (dont-show &optional dont-validate)
   "Exports current subtree as wintersmith html and copies to blog.
 Posts need very little to work, most information is guessed.
 Scheduled date is respected and heading is marked as DONE.
@@ -120,7 +120,7 @@ will be a sanitised version of the title, see
         ;; properties.
         ;; Define a name, if there isn't one.
         (unless name
-          (setq name (concat (format-time-string "%Y-%m-%d" date) "-" (nitelite/handleize-file-name title)))
+          (setq name (concat (format-time-string "%Y-%m-%d" date) "-" (nitelite/handleize title)))
           (org-entry-put (point) "filename" name))
         (org-todo 'done))
 
@@ -258,7 +258,7 @@ And transforms anything that's not alphanumeric into dashes."
       (replace-regexp-in-string
        "(.*)" "" name))))))
 
-(defun nitelite/handleize-file-name(name)
+(defun nitelite/handleize(name)
   "Make NAME safe for filenames.
 Removes any occurrence of parentheses (with their content),
 Trims the result,
@@ -267,13 +267,19 @@ And transforms anything that's not alphanumeric into dashes."
   (require 'subr-x)
   (url-hexify-string
    (downcase
+    ;; Remove any remaining not word characters
     (replace-regexp-in-string
      "[^[:word:]-]" ""
+     ;; replace all whitespace with a dash
       (replace-regexp-in-string
-       "[[:space:]]" "-"
-       (string-trim
+       "[[:space:]]+" "-"
+        ;; Remove all punctuation since quotes won't be removed by word class
         (replace-regexp-in-string
-         "(.*)" "" name)))))))
+         "[[:punct:]]+" ""
+         ;; trim
+         (string-trim
+          (replace-regexp-in-string
+           "(.*)" "" name))))))))
 
 (defun nitelite/export-all ()
   "Export all subtrees that are *not* tagged with :noexport: to
