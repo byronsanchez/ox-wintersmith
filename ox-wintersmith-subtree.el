@@ -59,7 +59,7 @@ Will be stripped from links addresses on the final HTML."
   :type 'string
   :group 'nitelite)
 
-(defun nitelite/export-to-blog (dont-show)
+(defun nitelite/export-to-blog (dont-show dont-validate)
   "Exports current subtree as wintersmith html and copies to blog.
 Posts need very little to work, most information is guessed.
 Scheduled date is respected and heading is marked as DONE.
@@ -127,7 +127,9 @@ will be a sanitised version of the title, see
       (let ((subtree-content
              (save-restriction
                (org-narrow-to-subtree)
-               (ignore-errors (ispell-buffer))
+               (unless dont-validate
+                 (ignore-errors (ispell-buffer))
+                 )
                (buffer-string)))
             (header-content
              (nitelite/get-org-headers))
@@ -272,6 +274,21 @@ And transforms anything that's not alphanumeric into dashes."
        (string-trim
         (replace-regexp-in-string
          "(.*)" "" name)))))))
+
+(defun nitelite/export-all ()
+  "Export all subtrees that are *not* tagged with :noexport: to
+separate files.
+
+Subtrees that do not have the :EXPORT_FILE_NAME: property set
+are exported to a filename derived from the headline text."
+  (interactive)
+  (save-excursion
+    ;; (set-mark (point-min))
+    ;;  (goto-char (point-max))
+    (org-map-entries
+     (lambda ()
+         (funcall 'nitelite/export-to-blog t t)
+         ) "+TODO=\"DONE\"" nil)))
 
 ; (defun nitelite/org-export-all (backend blog-tag)
 ;   "Export all subtrees that are *not* tagged with :noexport: to
