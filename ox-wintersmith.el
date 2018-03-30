@@ -122,7 +122,6 @@ makes:
 ;;; Define Back-End
 
 (org-export-define-derived-backend 'wintersmith 'html
-  :export-block '("HTML" "WINTERSMITH")
   :menu-entry
   '(?j "Wintersmith: export to HTML with YAML front matter."
        ((?H "As HTML buffer" org-wintersmith-export-as-html)
