@@ -53,7 +53,7 @@
 ;; niteLite.io - music
 ;;
 
-(defcustom nitelite/blog-dir (expand-file-name "~/projects/hackBytes/byronsanchez/nitelite.io/contents/")
+(defcustom nitelite/blog-dir (expand-file-name "~/projects/hackBytes/byronsanchez/nitelite.io/nitelite.io-web/contents/")
   "Directory to save posts."
   :type 'directory
   :group 'nitelite)
@@ -86,7 +86,7 @@ Will be stripped from links addresses on the final HTML."
 ;; hackBytes.io - software
 ;;
 
-(defcustom hackbytes/blog-dir (expand-file-name "~/projects/hackBytes/byronsanchez/hackbytes.io/contents/")
+(defcustom hackbytes/blog-dir (expand-file-name "~/projects/hackBytes/byronsanchez/hackbytes.io/hackbytes.io-web/contents/")
   "Directory to save posts."
   :type 'directory
   :group 'nitelite)
