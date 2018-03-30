@@ -31,7 +31,8 @@
 ;;
 ;;; Usage
 ;;
-;; Place this in your `load-path`, add the following lines to your init file, and invoke `M-x nitelite/export-to-blog` to export a subtree as a blog post.
+;; Place this in your `load-path`, add the following lines to your init file,
+;; and invoke `M-x nitelite/export-to-blog` to export a subtree as a blog post.
 ;;
 ;; ```
 ;; (autoload 'nitelite/export-to-blog "wintersmith-once")
@@ -39,7 +40,7 @@
 ;;
 ;; ;; Obviously, these two need to be changed for your blog.
 ;; (setq nitelite/blog-base-url "https://nitelite.io/")
-;; (setq nitelite/blog-dir (expand-file-name "~/projects/byronsanchez/nitelite.io/contents/"))
+;; (setq nitelite/blog-dir (expand-file-name "~/projects/hackBytes/byronsanchez/nitelite.io/contents/"))
 ;; ```
 
 ;;; Code:
@@ -48,7 +49,11 @@
 (require 'ox-wintersmith)
 (require 'subr-x)
 
-(defcustom nitelite/blog-dir (expand-file-name "~/projects/byronsanchez/nitelite.io/contents/")
+;;
+;; niteLite.io - music
+;;
+
+(defcustom nitelite/blog-dir (expand-file-name "~/projects/hackBytes/byronsanchez/nitelite.io/contents/")
   "Directory to save posts."
   :type 'directory
   :group 'nitelite)
@@ -60,23 +65,73 @@ Will be stripped from links addresses on the final HTML."
   :group 'nitelite)
 
 (defcustom nitelite/export-all-constraint "+TODO=\"DONE\""
-  "An org-mode search constraint to determine which headlines in a file get exported when using `nitelite/export-all`"
+  "An org-mode search constraint to determine which headlines in a file get exported when using `wintersmith/export-all`"
   :group 'org-export-wintersmith
   :type 'string)
 
+(defconst nitelite/base-regexp
+  (macroexpand `(rx (or ,nitelite/blog-base-url ,nitelite/blog-dir))))
+
 (defun nitelite/export-to-blog (dont-show &optional dont-validate)
+  (interactive "P")
+  (wintersmith/export-to-blog dont-show nitelite/blog-dir nitelite/blog-base-url nitelite/base-regexp dont-validate)
+  )
+
+(defun nitelite/export-all (dont-show &optional dont-validate)
+  (interactive "P")
+  (wintersmith/export-all dont-show nitelite/blog-dir nitelite/blog-base-url nitelite/base-regexp nitelite/export-all-constraint dont-validate)
+  )
+
+;;
+;; hackBytes.io - software
+;;
+
+(defcustom hackbytes/blog-dir (expand-file-name "~/projects/hackBytes/byronsanchez/hackbytes.io/contents/")
+  "Directory to save posts."
+  :type 'directory
+  :group 'nitelite)
+
+(defcustom hackbytes/blog-base-url "https://hackbytes.io/"
+  "Base URL of the blog.
+Will be stripped from links addresses on the final HTML."
+  :type 'string
+  :group 'nitelite)
+
+(defcustom hackbytes/export-all-constraint "+TODO=\"DONE\""
+  "An org-mode search constraint to determine which headlines in a file get exported when using `wintersmith/export-all`"
+  :group 'org-export-wintersmith
+  :type 'string)
+
+(defconst hackbytes/base-regexp
+  (macroexpand `(rx (or ,hackbytes/blog-base-url ,hackbytes/blog-dir))))
+
+(defun hackbytes/export-to-blog (dont-show &optional dont-validate)
+  (interactive "P")
+  (wintersmith/export-to-blog dont-show hackbytes/blog-dir hackbytes/blog-base-url hackbytes/base-regexp dont-validate)
+  )
+
+(defun hackbytes/export-all (dont-show &optional dont-validate)
+  (interactive "P")
+  (wintersmith/export-all dont-show hackbytes/blog-dir hackbytes/blog-base-url hackbytes/base-regexp hackbytes/export-all-constraint dont-validate)
+  )
+
+;;
+;; Plugin
+;;
+
+(defun wintersmith/export-to-blog (dont-show wintersmith/blog-dir wintersmith/blog-base-url wintersmith/base-regexp &optional dont-validate)
   "Exports current subtree as wintersmith html and copies to blog.
 Posts need very little to work, most information is guessed.
 Scheduled date is respected and heading is marked as DONE.
 
 Pages are marked by a \":EXPORT_WINTERSMITH_TEMPLATE: page\" property,
 and they also need a :filename: property. Schedule is then
-ignored, and the file is saved inside `nitelite/blog-dir'.
+ignored, and the file is saved inside `wintersmith/blog-dir'.
 
 The filename property is not mandatory for posts. If present, it
 will used exactly (no sanitising will be done). If not, filename
 will be a sanitised version of the title, see
-`nitelite/sanitise-file-name'."
+`wintersmith/sanitise-file-name'."
   (interactive "P")
   (save-excursion
     ;; Actual posts NEED a TODO state. So we go up the tree until we
@@ -109,7 +164,7 @@ will be a sanitised version of the title, see
            (series (org-entry-get (point) "series" t))
            (org-wintersmith-categories
             (mapconcat
-             (lambda (tag) (nitelite/convert-tag tag))
+             (lambda (tag) (wintersmith/convert-tag tag))
              tags " "))
            (org-export-show-temporary-export-buffer nil))
 
@@ -125,7 +180,7 @@ will be a sanitised version of the title, see
         ;; properties.
         ;; Define a name, if there isn't one.
         (unless name
-          (setq name (concat (format-time-string "%Y-%m-%d" date) "-" (nitelite/handleize title)))
+          (setq name (concat (format-time-string "%Y-%m-%d" date) "-" (wintersmith/handleize title)))
           (org-entry-put (point) "filename" name))
         (org-todo 'done))
 
@@ -137,11 +192,11 @@ will be a sanitised version of the title, see
                  )
                (buffer-string)))
             (header-content
-             (nitelite/get-org-headers))
+             (wintersmith/get-org-headers))
             (reference-buffer (current-buffer)))
         (with-temp-buffer
-          (nitelite/prepare-input-buffer
-           header-content subtree-content reference-buffer)
+          (wintersmith/prepare-input-buffer
+           header-content subtree-content reference-buffer wintersmith/blog-dir)
 
           ;; Export and then do some fixing on the output buffer.
           (org-wintersmith-export-as-html nil t nil nil nil)
@@ -161,10 +216,10 @@ will be a sanitised version of the title, see
               (replace-match (concat " " (format-time-string "%Y-%m-%d %T" date)) :fixedcase :literal nil 1))
 
             ;; Save the final file.
-            (nitelite/clean-output-links)
+            (wintersmith/clean-output-links wintersmith/base-regexp)
             (let ((out-file
                    (expand-file-name (concat (if is-page "" "notebooks/") name ".html")
-                                     nitelite/blog-dir)))
+                                     wintersmith/blog-dir)))
               (write-file out-file)
               (unless dont-show
                 (find-file-other-window out-file)))
@@ -173,18 +228,15 @@ will be a sanitised version of the title, see
             (kill-new (concat "UPDATE: " title))
             (kill-new (concat "POST: " title))))))))
 
-(defun nitelite/get-org-headers ()
+(defun wintersmith/get-org-headers ()
   "Return everything above the first headline of current buffer."
   (save-excursion
     (goto-char (point-min))
     (search-forward-regexp "^\\*+ ")
     (buffer-substring-no-properties (point-min) (match-beginning 0))))
 
-(defconst nitelite/base-regexp
-  (macroexpand `(rx (or ,nitelite/blog-base-url ,nitelite/blog-dir))))
-
-(defun nitelite/clean-output-links ()
-  "Strip `nitelite/blog-base-url' and \"file://\" from the start of URLs. "
+(defun wintersmith/clean-output-links (wintersmith/base-regexp)
+  "Strip `wintersmith/blog-base-url' and \"file://\" from the start of URLs. "
   ;; Fix org's stupid filename handling.
   (goto-char (point-min))
   (while (search-forward-regexp "\\(href\\|src\\)=\"\\(file://\\)/" nil t)
@@ -192,13 +244,13 @@ will be a sanitised version of the title, see
   ;; Strip base-url from links
   (goto-char (point-min))
   (while (search-forward-regexp
-          (concat "href=\"" nitelite/base-regexp)
+          (concat "href=\"" wintersmith/base-regexp)
           nil t)
     (replace-match "href=\"/" :fixedcase :literal))
   (goto-char (point-min)))
 
 ;; TODO: Fix the bug here where if there's no newline after a link, it crashes
-(defun nitelite/prepare-input-buffer (header content reference-buffer)
+(defun wintersmith/prepare-input-buffer (header content reference-buffer wintersmith/blog-dir)
   "Insert content and clean it up a bit."
   (insert header content)
   (goto-char (point-min))
@@ -210,7 +262,7 @@ will be a sanitised version of the title, see
                   (not org-link-search-failed))
       (cond
        ((looking-at (format "\\[\\[\\(file:%s\\)"
-                            (regexp-quote (abbreviate-file-name nitelite/blog-dir))))
+                            (regexp-quote (abbreviate-file-name wintersmith/blog-dir))))
         (replace-match "file:/" nil nil nil 1)
         (goto-char (match-beginning 0))
         (when (looking-at (rx "[[" (group "file:/images/" (+ (not space))) "]]"))
@@ -234,21 +286,21 @@ will be a sanitised version of the title, see
         (when (and target-filename
                    (null (string= target-filename this-filename)))
           (replace-match
-           (format "/%s.html" (nitelite/strip-date-from-filename target-filename))
+           (format "/%s.html" (wintersmith/strip-date-from-filename target-filename))
            :fixedcase :literal nil 1))))))
   (goto-char (point-min))
   (outline-next-heading))
 
-(defun nitelite/strip-date-from-filename (name)
+(defun wintersmith/strip-date-from-filename (name)
   (replace-regexp-in-string "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-" "" name))
 
-(defun nitelite/convert-tag (tag)
+(defun wintersmith/convert-tag (tag)
   "Overcome org-mode's tag limitations."
   (replace-regexp-in-string
    "_" "-"
    (replace-regexp-in-string "__" "." tag)))
 
-(defun nitelite/sanitise-file-name (name)
+(defun wintersmith/sanitise-file-name (name)
   "Make NAME safe for filenames.
 Removes any occurrence of parentheses (with their content),
 Trims the result,
@@ -263,7 +315,7 @@ And transforms anything that's not alphanumeric into dashes."
       (replace-regexp-in-string
        "(.*)" "" name))))))
 
-(defun nitelite/handleize(name)
+(defun wintersmith/handleize(name)
   "Make NAME safe for filenames.
 Removes any occurrence of parentheses (with their content),
 Trims the result,
@@ -286,7 +338,7 @@ And transforms anything that's not alphanumeric into dashes."
           (replace-regexp-in-string
            "(.*)" "" name))))))))
 
-(defun nitelite/export-all ()
+(defun wintersmith/export-all (dont-show wintersmith/blog-dir wintersmith/blog-base-url wintersmith/base-regexp wintersmith/export-all-constraint &optional dont-validate)
   "Export all subtrees that are *not* tagged with :noexport: to
 separate files.
 
@@ -298,8 +350,8 @@ are exported to a filename derived from the headline text."
     ;;  (goto-char (point-max))
     (org-map-entries
      (lambda ()
-         (funcall 'nitelite/export-to-blog t t)
-         ) nitelite/export-all-constraint nil)))
+         (funcall 'wintersmith/export-to-blog t t)
+         ) wintersmith/export-all-constraint nil)))
 
 ; (defun nitelite/org-export-all (backend blog-tag)
 ;   "Export all subtrees that are *not* tagged with :noexport: to
