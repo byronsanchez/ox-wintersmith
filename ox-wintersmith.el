@@ -58,27 +58,27 @@ description: Instructions on Upgrading Octopress
   :group 'org-export-wintersmith
   :type 'string)
 
-(defcustom org-wintersmith-category "other"
+(defcustom org-wintersmith-category ""
   "Default space-separated category in Wintersmith article."
   :group 'org-export-wintersmith
   :type 'string)
 
-(defcustom org-wintersmith-tags "tagless"
+(defcustom org-wintersmith-tags ""
   "Default space-separated tags in Wintersmith article."
   :group 'org-export-wintersmith
   :type 'string)
 
-(defcustom org-wintersmith-published 0
+(defcustom org-wintersmith-published "0"
   "Default publish status in Wintersmith article."
   :group 'org-export-wintersmith
   :type 'string)
 
-(defcustom org-wintersmith-comments 0
+(defcustom org-wintersmith-comments "0"
   "Default comments (disqus) flag in Wintersmith article."
   :group 'org-export-wintersmith
   :type 'string)
 
-(defcustom org-wintersmith-description 0
+(defcustom org-wintersmith-description "0"
   "A one-liner description to display in place of summary text or the full post on index pages."
   :group 'org-export-wintersmith
   :type 'string)
@@ -186,29 +186,42 @@ holding export options."
 
 ;;; YAML Front Matter
 (defun org-wintersmith--get-option (info property-name &optional default)
-  (let ((property (org-export-data (plist-get info property-name) info)))
+  (let ((property
+         (org-export-data (plist-get info property-name) info)))
     (format "%s" (or property default ""))))
+
+;; Get the id to pass to wintersmith front-matter, to establish a UID for the
+;; blog post (can be used with disqus! or for anything else with requiring
+;; identification of posts; because we're using org-mode properties, it will
+;; always be the same after export!)
+(defun org-wintersmith--get-id ()
+  (org-entry-get (point) "ID" nil t)
+  )
 
 ;; Dig throw the parse-tree in the info plist and find the node-property
 ;; containing the ID property for the article
-(defun org-wintersmith--get-id (info &optional default)
-	(let ((the-parse-tree (plist-get info :parse-tree)))
-        (let ((vals (org-element-map the-parse-tree 'node-property
-                  (lambda (np)
-                    (if (string= (org-element-property :key np) "ID")
-                        (org-element-property :value np)
-                        ;;(format "%s" (or (org-element-property :value np) default ""))
-                      )))))
+;;
+;; UPDATE: Renamed, because it appears to have broken with the emacs 26 and
+;; org-mode 9.1 update. Manually going through the parse tree reveals it's not
+;; accessible there.
+;; (defun org-wintersmith--old-get-id (info &optional default)
+;;   (let ((the-parse-tree (plist-get info :parse-tree)))
+;;     (let ((vals (org-element-map the-parse-tree 'node-property
+;;                   (lambda (np)
+;;                     (if (string= (org-element-property :key np) "id")
+;;                         (org-element-property :value np)
+;;                       ;;(format "%s" (or (org-element-property :value np) default ""))
+;;                       )))))
 
-        ;; org-element-map gives us a list of values
-        ;; since if there are multiple IDs, they'll all be the same, and since
-        ;; we only limit 1 ID per article, the first element of the list is what
-        ;; we pick.
-        (format "%s" (or (car vals) default "")))))
+;;       ;; org-element-map gives us a list of values
+;;       ;; since if there are multiple ids, they'll all be the same, and since
+;;       ;; we only limit 1 id per article, the first element of the list is what
+;;       ;; we pick.
+;;       (format "%s" (or (car vals) default "")))))
 
 (defun org-wintersmith--yaml-front-matter (info)
-
-  (let ((title
+  (let (
+        (title
          (org-wintersmith--get-option info :title))
         (date
          (org-wintersmith--get-option info :date))
@@ -227,8 +240,25 @@ holding export options."
         (description
          (org-wintersmith--get-option info :wintersmith-description org-wintersmith-description))
         (id
-         (org-wintersmith--get-id info))
+         (org-wintersmith--get-id))
         )
+
+    ;; Translate org-mode/elisp values to wintersmith-compatible values (t -> 1; nil-> 0)
+    ;;
+    ;; nil values get skipped (handled by using our defaults defined here), so
+    ;; no validation required!
+    ;;
+    ;; However, translate some org-mode/elisp conventions to wintersmith
+    ;; conventions (eg. t to 1)
+    (if (string= published "t")
+        (progn
+          (setq published "1"))
+        )
+
+    (if (string= comments "t")
+        (progn
+          (setq comments "1"))
+      )
 
     (concat
      "---"
@@ -243,9 +273,7 @@ holding export options."
      "\ntemplate: "     template
      "\ndescription: " description
      "\nid: " id
-     "\n---\n"))
-
-  )
+     "\n---\n")))
 
 ;;; Filename and Date Helper
 (defun org-wintersmith-date-from-filename (&optional filename)

@@ -64,7 +64,7 @@ Will be stripped from links addresses on the final HTML."
   :type 'string
   :group 'nitelite)
 
-(defcustom nitelite/export-all-constraint "+TODO=\"DONE\""
+(defcustom nitelite/export-all-constraint "BLOG+NITELITE+EXPORT_WINTERSMITH_PUBLISHED=t"
   "An org-mode search constraint to determine which headlines in a file get exported when using `wintersmith/export-all`"
   :group 'org-export-wintersmith
   :type 'string)
@@ -97,7 +97,7 @@ Will be stripped from links addresses on the final HTML."
   :type 'string
   :group 'nitelite)
 
-(defcustom hackbytes/export-all-constraint "+TODO=\"DONE\""
+(defcustom hackbytes/export-all-constraint "BLOG+HACKBYTES+EXPORT_WINTERSMITH_PUBLISHED=t"
   "An org-mode search constraint to determine which headlines in a file get exported when using `wintersmith/export-all`"
   :group 'org-export-wintersmith
   :type 'string)
@@ -134,12 +134,8 @@ will be a sanitised version of the title, see
 `wintersmith/sanitise-file-name'."
   (interactive "P")
   (save-excursion
-    ;; Actual posts NEED a TODO state. So we go up the tree until we
-    ;; reach one.
-    (while (null (org-entry-get (point) "TODO" nil t))
-      (outline-up-heading 1 t))
-    (org-entry-put (point) "EXPORT_WINTERSMITH_TEMPLATE"
-                   (org-entry-get (point) "EXPORT_WINTERSMITH_TEMPLATE" t))
+    ;; Actual posts NEED a PUBLISHED state. If it doesn't have one, we assume
+    ;; it's a draft and skip it
     (let* (
            ;; custom-id takes precedence over generated ids
            (custom-id (org-entry-get (point) "CUSTOM_ID" t))
@@ -153,8 +149,8 @@ will be a sanitised version of the title, see
            (date (if ia-stamp
                      (date-to-time ia-stamp)
                    (if closed-stamp
-                     (date-to-time closed-stamp)
-                    (org-get-scheduled-time (point) nil))
+                       (date-to-time closed-stamp)
+                     (org-get-scheduled-time (point) nil))
                    ))
            (tags (nreverse (org-get-tags-at)))
            (meta-title (org-entry-get (point) "meta_title"))
@@ -168,65 +164,79 @@ will be a sanitised version of the title, see
              tags " "))
            (org-export-show-temporary-export-buffer nil))
 
-      (unless date
-        (org-schedule nil ".")
-        (setq date (current-time)))
+      ;; DO NOT publish drafts
+      ;; Only run the export process if a headline has been explicitly marked as published
+      (if (null (org-entry-get (point) "EXPORT_WINTERSMITH_PUBLISHED" nil))
+          (progn
+            (message (concat "NOT PUBLISHED: " title))
+            ;; Update tags for quick view of blog post state
+            (org-toggle-tag "DRAFT" 'on)
+            (org-toggle-tag "PUBLISHED" 'off))
+        (unless date
+          (org-schedule nil ".")
+          (setq date (current-time)))
 
-      ;; For pages, demand filename.
-      (if is-page
-          (if (null name)
-              (error "Pages need a :filename: property"))
-        ;; For posts, guess some information that wasn't provided as
-        ;; properties.
-        ;; Define a name, if there isn't one.
-        (unless name
-          (setq name (concat (format-time-string "%Y-%m-%d" date) "-" (wintersmith/handleize title)))
-          (org-entry-put (point) "filename" name))
-        (org-todo 'done))
+        ;; For pages, demand filename.
+        (if is-page
+            (if (null name)
+                (error "Pages need a :filename: property"))
 
-      (let ((subtree-content
-             (save-restriction
-               (org-narrow-to-subtree)
-               (unless dont-validate
-                 (ignore-errors (ispell-buffer))
-                 )
-               (buffer-string)))
-            (header-content
-             (wintersmith/get-org-headers))
-            (reference-buffer (current-buffer)))
-        (with-temp-buffer
-          (wintersmith/prepare-input-buffer
-           header-content subtree-content reference-buffer wintersmith/blog-dir)
+          ;; For posts, guess some information that wasn't provided as
+          ;; properties.
+          ;; Define a name, if there isn't one.
+          (unless name
+            (setq name (concat (format-time-string "%Y-%m-%d" date) "-" (wintersmith/handleize title)))
+            (org-entry-put (point) "filename" name))
+          ;;(org-todo 'done)
+          )
 
-          ;; Export and then do some fixing on the output buffer.
-          (org-wintersmith-export-as-html nil t nil nil nil)
-          (with-current-buffer "*Org Wintersmith HTML Export*"
-            (goto-char (point-min))
-            ;; Configure the wintersmith header.
-            (search-forward "\n---\n")
-            (goto-char (1+ (match-beginning 0)))
-            (when series
-              (insert "series: \"" series "\"\n"))
-            (when meta-title
-              (insert "meta_title: \"" (format meta-title title) "\"\n"))
-            (search-backward-regexp "\ndate *:\\(.*\\)$")
-            (if is-page
-                ;; Pages don't need a date field.
-                (replace-match "" :fixedcase :literal nil 0)
-              (replace-match (concat " " (format-time-string "%Y-%m-%d %T" date)) :fixedcase :literal nil 1))
+        (let ((subtree-content
+               (save-restriction
+                 (org-narrow-to-subtree)
+                 (unless dont-validate
+                   (ignore-errors (ispell-buffer))
+                   )
+                 (buffer-string)))
+              (header-content
+               (wintersmith/get-org-headers))
+              (reference-buffer (current-buffer)))
+          (with-temp-buffer
+            (wintersmith/prepare-input-buffer
+             header-content subtree-content reference-buffer wintersmith/blog-dir)
 
-            ;; Save the final file.
-            (wintersmith/clean-output-links wintersmith/base-regexp)
-            (let ((out-file
-                   (expand-file-name (concat (if is-page "" "notebooks/") name ".html")
-                                     wintersmith/blog-dir)))
-              (write-file out-file)
-              (unless dont-show
-                (find-file-other-window out-file)))
+            ;; Export and then do some fixing on the output buffer.
+            (org-wintersmith-export-as-html nil t nil nil nil)
+            (with-current-buffer "*Org Wintersmith HTML Export*"
+              (goto-char (point-min))
+              ;; Configure the wintersmith header.
+              (search-forward "\n---\n")
+              (goto-char (1+ (match-beginning 0)))
+              (when series
+                (insert "series: \"" series "\"\n"))
+              (when meta-title
+                (insert "meta_title: \"" (format meta-title title) "\"\n"))
+              (search-backward-regexp "\ndate *:\\(.*\\)$")
+              (if is-page
+                  ;; Pages don't need a date field.
+                  (replace-match "" :fixedcase :literal nil 0)
+                (replace-match (concat " " (format-time-string "%Y-%m-%d %T" date)) :fixedcase :literal nil 1))
 
-            ;; In case we commit, lets push the message to the kill-ring
-            (kill-new (concat "UPDATE: " title))
-            (kill-new (concat "POST: " title))))))))
+              ;; Save the final file.
+              (wintersmith/clean-output-links wintersmith/base-regexp)
+              (let ((out-file
+                     (expand-file-name (concat (if is-page "" "notebooks/") name ".html")
+                                       wintersmith/blog-dir)))
+                (write-file out-file)
+                (unless dont-show
+                  (find-file-other-window out-file)))
+
+              ;; In case we commit, lets push the message to the kill-ring
+              (kill-new (concat "UPDATE: " title))
+              (kill-new (concat "POST: " title)))))
+
+        ;; Update tags for quick view of blog post state
+        (org-toggle-tag "DRAFT" 'off)
+        (org-toggle-tag "PUBLISHED" 'on)))))
 
 (defun wintersmith/get-org-headers ()
   "Return everything above the first headline of current buffer."
