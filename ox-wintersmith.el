@@ -83,6 +83,9 @@ description: Instructions on Upgrading Octopress
   :group 'org-export-wintersmith
   :type 'string)
 
+;; Path for highlight command name
+(defvar hljs-path "hljs")
+
 ;; TODO: This is pretty much useless right now, since I'm converting org-mode to
 ;; HTML and not markdown. Maybe I'll find something I wanna use, so I'm leaving
 ;; this here for now. But it's also likely that I end up using org-mode's export
@@ -155,7 +158,58 @@ INFO is a plist used as a communication channel."
                 (replace-regexp-in-string
                  "emacs-lisp" "cl"
                  (format "%s" language)) value))
-    (org-export-with-backend 'html src-block contents info)))
+    (hljs-org-html-code src-block contents info)
+    ))
+
+;;(org-export-with-backend 'html src-block contents info)
+
+
+;; Pipe org-mode codeblocks/src-blocks to highlight.js instead of the native
+;; org-mode syntax highlighter
+;;
+;; source: https://linevi.ch/en/org-pygments.html
+;; adapted to highlight.js
+(defun hljs-org-html-code (code contents info)
+  ;; Generating tmp file path.
+  ;; Current date and time hash will ideally pass our needs.
+  (message "EXPORTING USING HLJS")
+
+  (setq temp-source-file (format "/tmp/hljs-%s.txt"(md5 (current-time-string))))
+  ;; default language to plain text
+  (setq hljs-lang (or (org-element-property :language code)
+                      "text"))
+
+  ;; determine whether the codeblock is plain-text or code for the wrapper tag
+  (setq shouldOnlyHightlight (cond
+                              ((string= hljs-lang "d") t)
+                              ((string= hljs-lang "hh") t)
+                              ((string= hljs-lang "ld") t)
+                              ((string= hljs-lang "fa") t)
+                              ((string= hljs-lang "nd") t)
+                              ((string= hljs-lang "out") t)
+                              ((string= hljs-lang "in") t)
+                              ((string= hljs-lang "sa") t)
+                              ((string= hljs-lang "t") t)
+                              (t nil)))
+
+  (if shouldOnlyHighlight
+      (setq hljs-code-block (concat
+                             (format "<div class=\"highlight %s\">" hljs-lang)
+                             (org-element-property :value code)
+                             "</div>"
+                             ))
+    (setq hljs-code-block (concat
+                           (format "<div class=\"highlight %s\"><pre><code class=\"%s\">" hljs-lang hljs-lang)
+                           (org-element-property :value code)
+                           "</code></pre></div>"
+                           )))
+
+  ;; Writing block contents to the file.
+  (with-temp-file temp-source-file (insert hljs-code-block))
+  ;; Exectuing the shell-command an reading an output
+  (shell-command-to-string (format "%s < %s"
+				                   hljs-path
+				                   temp-source-file)))
 
 ;;; Template
 (defun org-wintersmith-template (contents info)
