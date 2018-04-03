@@ -134,8 +134,33 @@ will be a sanitised version of the title, see
 `wintersmith/sanitise-file-name'."
   (interactive "P")
   (save-excursion
-    ;; Actual posts NEED a PUBLISHED state. If it doesn't have one, we assume
-    ;; it's a draft and skip it
+    ;; Actual posts NEED a PUBLISHED state. We move up to the 4th headline and
+    ;; check for "PUBLISHED" state. We stop at the 4th headline, because using
+    ;; file+datetree, the third headline is an actual date headline of the form
+    ;; YYYY-MM-DD, so it stops being titles there, at least the way I use
+    ;; org-mode for blogging.
+    ;;
+    ;; If there is no published state by the 4th-level headline, we assume it's
+    ;; a draft and skip it.
+    ;;
+    ;; We don't inherit properties with org-entry-get, because we're manually
+    ;; checking up the tree via while loop iteration
+    ;;
+    ;; UPDATE: didn't implement the last comment, but keeping it there for
+    ;; reference in case what I currently have isn't enough.
+
+    ;; get literal nil as string, so we can break this loop if we find an
+    ;; explicit setting that signals the post is a draft
+    ;;
+    ;; basically, just keep going up hierarchies (that way we don't publish a
+    ;; subheading eg. h3's and h4's) til we find an explicitly set PUBLISHED
+    ;; state. This state signals that it's the top-level post headline. From
+    ;; there, we read the value as a string (whether or not it's nil) and can
+    ;; programattically decide what to do with nil (drafts) or t (published)
+    ;; later.
+    (while (null (org-entry-get (point) "EXPORT_WINTERSMITH_PUBLISHED" nil t))
+      (outline-up-heading 1 t))
+
     (let* (
            ;; custom-id takes precedence over generated ids
            (custom-id (org-entry-get (point) "CUSTOM_ID" t))
@@ -166,6 +191,9 @@ will be a sanitised version of the title, see
 
       ;; DO NOT publish drafts
       ;; Only run the export process if a headline has been explicitly marked as published
+      ;;
+      ;; /now/ we get the literal nil as nil instead of string, to treat the
+      ;; post as a draft
       (if (null (org-entry-get (point) "EXPORT_WINTERSMITH_PUBLISHED" nil))
           (progn
             (message (concat "NOT PUBLISHED: " title))
