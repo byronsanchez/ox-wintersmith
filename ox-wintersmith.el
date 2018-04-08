@@ -53,7 +53,7 @@ description: Instructions on Upgrading Octopress
   :group 'org-export-wintersmith
   :type 'boolean)
 
-(defcustom org-wintersmith-template "layouts/article.jade"
+(defcustom org-wintersmith-template "globals/layouts/article.jade"
   "Default template used in Wintersmith article."
   :group 'org-export-wintersmith
   :type 'string)
