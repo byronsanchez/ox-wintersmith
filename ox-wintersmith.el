@@ -172,15 +172,13 @@ INFO is a plist used as a communication channel."
 (defun hljs-org-html-code (code contents info)
   ;; Generating tmp file path.
   ;; Current date and time hash will ideally pass our needs.
-  (message "EXPORTING USING HLJS")
-
   (setq temp-source-file (format "/tmp/hljs-%s.txt"(md5 (current-time-string))))
   ;; default language to plain text
   (setq hljs-lang (or (org-element-property :language code)
                       "text"))
 
   ;; determine whether the codeblock is plain-text or code for the wrapper tag
-  (setq shouldOnlyHightlight (cond
+  (setq shouldOnlyHighlight (cond
                               ((string= hljs-lang "d") t)
                               ((string= hljs-lang "hh") t)
                               ((string= hljs-lang "ld") t)
