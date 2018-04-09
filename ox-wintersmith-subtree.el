@@ -64,7 +64,7 @@ Will be stripped from links addresses on the final HTML."
   :type 'string
   :group 'nitelite)
 
-(defcustom nitelite/export-all-constraint "BLOG+NITELITE+EXPORT_WINTERSMITH_PUBLISHED=t"
+(defcustom nitelite/export-all-constraint "BLOG+NITELITE+EXPORT_WINTERSMITH_PUBLISHED=\"t\""
   "An org-mode search constraint to determine which headlines in a file get exported when using `wintersmith/export-all`"
   :group 'org-export-wintersmith
   :type 'string)
@@ -97,7 +97,7 @@ Will be stripped from links addresses on the final HTML."
   :type 'string
   :group 'nitelite)
 
-(defcustom hackbytes/export-all-constraint "BLOG+HACKBYTES+EXPORT_WINTERSMITH_PUBLISHED=t"
+(defcustom hackbytes/export-all-constraint "BLOG+HACKBYTES+EXPORT_WINTERSMITH_PUBLISHED=\"t\""
   "An org-mode search constraint to determine which headlines in a file get exported when using `wintersmith/export-all`"
   :group 'org-export-wintersmith
   :type 'string)
