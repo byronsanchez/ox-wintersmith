@@ -53,6 +53,11 @@
 ;; niteLite.io - music
 ;;
 
+(defcustom nitelite/asset-dir (expand-file-name "~/projects/hackBytes/byronsanchez/blogs/blogs-web/nitelite.io-web/contents/assets/")
+  "Directory to store attachment assets."
+  :type 'directory
+  :group 'nitelite)
+
 (defcustom nitelite/blog-dir (expand-file-name "~/projects/hackBytes/byronsanchez/blogs/blogs-web/nitelite.io-web/contents/")
   "Directory to save posts."
   :type 'directory
@@ -74,17 +79,22 @@ Will be stripped from links addresses on the final HTML."
 
 (defun nitelite/export-to-blog (dont-show &optional dont-validate)
   (interactive "P")
-  (wintersmith/export-to-blog dont-show nitelite/blog-dir nitelite/blog-base-url nitelite/base-regexp dont-validate)
+  (wintersmith/export-to-blog dont-show nitelite/asset-dir nitelite/blog-dir nitelite/blog-base-url nitelite/base-regexp dont-validate)
   )
 
 (defun nitelite/export-all (dont-show &optional dont-validate)
   (interactive "P")
-  (wintersmith/export-all dont-show nitelite/blog-dir nitelite/blog-base-url nitelite/base-regexp nitelite/export-all-constraint dont-validate)
+  (wintersmith/export-all dont-show nitelite/asset-dir nitelite/blog-dir nitelite/blog-base-url nitelite/base-regexp nitelite/export-all-constraint dont-validate)
   )
 
 ;;
 ;; hackBytes.io - software
 ;;
+
+(defcustom hackbytes/asset-dir (expand-file-name "~/projects/hackBytes/byronsanchez/blogs/blogs-web/hackbytes.io-web/contents/assets/")
+  "Directory to store attachment assets."
+  :type 'directory
+  :group 'nitelite)
 
 (defcustom hackbytes/blog-dir (expand-file-name "~/projects/hackBytes/byronsanchez/blogs/blogs-web/hackbytes.io-web/contents/")
   "Directory to save posts."
@@ -107,19 +117,20 @@ Will be stripped from links addresses on the final HTML."
 
 (defun hackbytes/export-to-blog (dont-show &optional dont-validate)
   (interactive "P")
-  (wintersmith/export-to-blog dont-show hackbytes/blog-dir hackbytes/blog-base-url hackbytes/base-regexp dont-validate)
+  (wintersmith/export-to-blog dont-show hackbytes/asset-dir hackbytes/blog-dir hackbytes/blog-base-url hackbytes/base-regexp dont-validate)
   )
 
 (defun hackbytes/export-all (dont-show &optional dont-validate)
   (interactive "P")
-  (wintersmith/export-all dont-show hackbytes/blog-dir hackbytes/blog-base-url hackbytes/base-regexp hackbytes/export-all-constraint dont-validate)
+  (message "export-all invoked")
+  (wintersmith/export-all dont-show hackbytes/asset-dir hackbytes/blog-dir hackbytes/blog-base-url hackbytes/base-regexp hackbytes/export-all-constraint dont-validate)
   )
 
 ;;
 ;; Plugin
 ;;
 
-(defun wintersmith/export-to-blog (dont-show wintersmith/blog-dir wintersmith/blog-base-url wintersmith/base-regexp &optional dont-validate)
+(defun wintersmith/export-to-blog (dont-show wintersmith/asset-dir wintersmith/blog-dir wintersmith/blog-base-url wintersmith/base-regexp &optional dont-validate)
   "Exports current subtree as wintersmith html and copies to blog.
 Posts need very little to work, most information is guessed.
 Scheduled date is respected and heading is marked as DONE.
@@ -133,6 +144,7 @@ will used exactly (no sanitising will be done). If not, filename
 will be a sanitised version of the title, see
 `wintersmith/sanitise-file-name'."
   (interactive "P")
+  (message "export-to-blog called...")
   (save-excursion
     ;; Actual posts NEED a PUBLISHED state. We move up to the 4th headline and
     ;; check for "PUBLISHED" state. We stop at the 4th headline, because using
@@ -183,6 +195,13 @@ will be a sanitised version of the title, see
            (name (org-entry-get (point) "filename"))
            (title (org-get-heading t t))
            (series (org-entry-get (point) "series" t))
+           ;; the directory the file resides in
+           ;; the suffix of the attachment's unique id directory
+           (attachments-suffix (org-attach-dir))
+           ;; the prefix of the attachment's unique id directory
+           (attachments-prefix (file-name-directory (directory-file-name attachments-suffix)))
+           ;; the top-level attachment directory name (eg. "/data")
+           (attachments-top-level (file-name-directory (directory-file-name attachments-prefix)))
            (org-wintersmith-categories
             (mapconcat
              (lambda (tag) (wintersmith/convert-tag tag))
@@ -195,11 +214,14 @@ will be a sanitised version of the title, see
       ;; /now/ we get the literal nil as nil instead of string, to treat the
       ;; post as a draft
       (if (null (org-entry-get (point) "EXPORT_WINTERSMITH_PUBLISHED" nil))
+          ;; IF NOT PUBLISHED, SET DRAFT TAGS
           (progn
             (message (concat "NOT PUBLISHED: " title))
             ;; Update tags for quick view of blog post state
             (org-toggle-tag "DRAFT" 'on)
             (org-toggle-tag "PUBLISHED" 'off))
+
+        ;; IF IT'S PUBLISHED, THEN PUBLISH
         (unless date
           (org-schedule nil ".")
           (setq date (current-time)))
@@ -217,6 +239,23 @@ will be a sanitised version of the title, see
             (org-entry-put (point) "filename" name))
           ;;(org-todo 'done)
           )
+
+        ;; Copy over attachments
+        ;; 1 - preserve modification times
+        ;; 2 - create parent directories if they don't exist (ala mkdir -p)
+        ;; 3 - copy contents into the target directory (ala rsync merge/ dst)
+        ;;
+        ;; This logic should be here because the target-directory will be
+        ;; determined by which blog instance is doing the exporting.
+        (unless (null wintersmith/asset-dir)
+
+          (setq target-asset-dir (concat wintersmith/asset-dir
+                                         "/" (wintersmith/basename attachments-top-level)
+                                         "/" (wintersmith/basename attachments-prefix)
+                                         "/" (wintersmith/basename attachments-suffix)))
+
+          (message (concat "copying " attachments-suffix " to " target-asset-dir))
+          (copy-directory attachments-suffix target-asset-dir t t t))
 
         (let ((subtree-content
                (save-restriction
@@ -266,6 +305,9 @@ will be a sanitised version of the title, see
         ;; Update tags for quick view of blog post state
         (org-toggle-tag "DRAFT" 'off)
         (org-toggle-tag "PUBLISHED" 'on)))))
+
+(defun wintersmith/basename (path)
+  (file-name-nondirectory (directory-file-name path)))
 
 (defun wintersmith/get-org-headers ()
   "Return everything above the first headline of current buffer."
@@ -377,19 +419,20 @@ And transforms anything that's not alphanumeric into dashes."
           (replace-regexp-in-string
            "(.*)" "" name))))))))
 
-(defun wintersmith/export-all (dont-show wintersmith/blog-dir wintersmith/blog-base-url wintersmith/base-regexp wintersmith/export-all-constraint &optional dont-validate)
+(defun wintersmith/export-all (dont-show wintersmith/asset-dir wintersmith/blog-dir wintersmith/blog-base-url wintersmith/base-regexp wintersmith/export-all-constraint &optional dont-validate)
   "Export all subtrees that are *not* tagged with :noexport: to
 separate files.
 
 Subtrees that do not have the :EXPORT_FILE_NAME: property set
 are exported to a filename derived from the headline text."
   (interactive)
+  (message "export-all now running...")
   (save-excursion
     ;; (set-mark (point-min))
     ;;  (goto-char (point-max))
     (org-map-entries
      (lambda ()
-       (funcall 'wintersmith/export-to-blog dont-show wintersmith/blog-dir wintersmith/blog-base-url wintersmith/base-regexp dont-validate
+       (funcall 'wintersmith/export-to-blog dont-show wintersmith/asset-dir wintersmith/blog-dir wintersmith/blog-base-url wintersmith/base-regexp dont-validate
         )
          ) wintersmith/export-all-constraint nil)))
 
