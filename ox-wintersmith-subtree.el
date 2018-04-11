@@ -122,7 +122,6 @@ Will be stripped from links addresses on the final HTML."
 
 (defun hackbytes/export-all (dont-show &optional dont-validate)
   (interactive "P")
-  (message "export-all invoked")
   (wintersmith/export-all dont-show hackbytes/asset-dir hackbytes/blog-dir hackbytes/blog-base-url hackbytes/base-regexp hackbytes/export-all-constraint dont-validate)
   )
 
@@ -144,7 +143,6 @@ will used exactly (no sanitising will be done). If not, filename
 will be a sanitised version of the title, see
 `wintersmith/sanitise-file-name'."
   (interactive "P")
-  (message "export-to-blog called...")
   (save-excursion
     ;; Actual posts NEED a PUBLISHED state. We move up to the 4th headline and
     ;; check for "PUBLISHED" state. We stop at the 4th headline, because using
@@ -195,13 +193,6 @@ will be a sanitised version of the title, see
            (name (org-entry-get (point) "filename"))
            (title (org-get-heading t t))
            (series (org-entry-get (point) "series" t))
-           ;; the directory the file resides in
-           ;; the suffix of the attachment's unique id directory
-           (attachments-suffix (org-attach-dir))
-           ;; the prefix of the attachment's unique id directory
-           (attachments-prefix (file-name-directory (directory-file-name attachments-suffix)))
-           ;; the top-level attachment directory name (eg. "/data")
-           (attachments-top-level (file-name-directory (directory-file-name attachments-prefix)))
            (org-wintersmith-categories
             (mapconcat
              (lambda (tag) (wintersmith/convert-tag tag))
@@ -231,31 +222,56 @@ will be a sanitised version of the title, see
             (if (null name)
                 (error "Pages need a :filename: property"))
 
+          ;; PERMALINK
+          ;;
           ;; For posts, guess some information that wasn't provided as
           ;; properties.
           ;; Define a name, if there isn't one.
+          ;;
+          ;; If you go with a flat permalink structure (no YYYY-MM-dd), you can
+          ;; hold off on implementing a unique fallback (appending number
+          ;; incrementing if a collision occurs) until you actually run into
+          ;; that situation multiple times
+          ;;
+          ;; Until then, you can leverage the :filename: property if you need to
+          ;; as a fallback for the occasional collision that doesn't have to be
+          ;; automated yet.
           (unless name
-            (setq name (concat (format-time-string "%Y-%m-%d" date) "-" (wintersmith/handleize title)))
+            (setq name (concat
+                        ;;(format-time-string "%Y-%m-%d" date)
+                        ;;"-"
+                        (wintersmith/handleize title)))
             (org-entry-put (point) "filename" name))
           ;;(org-todo 'done)
           )
 
+        ;; ATTACHMENTS
+        ;;
         ;; Copy over attachments
+        ;;
         ;; 1 - preserve modification times
         ;; 2 - create parent directories if they don't exist (ala mkdir -p)
         ;; 3 - copy contents into the target directory (ala rsync merge/ dst)
         ;;
         ;; This logic should be here because the target-directory will be
         ;; determined by which blog instance is doing the exporting.
-        (unless (null wintersmith/asset-dir)
+        (unless (or (null wintersmith/asset-dir) (null (org-attach-dir)))
 
-          (setq target-asset-dir (concat wintersmith/asset-dir
-                                         "/" (wintersmith/basename attachments-top-level)
-                                         "/" (wintersmith/basename attachments-prefix)
-                                         "/" (wintersmith/basename attachments-suffix)))
+          ;; the directory the file resides in
+          ;; the suffix of the attachment's unique id directory
+          (setq wintersmith/attachments-suffix (org-attach-dir))
+          ;; the prefix of the attachment's unique id directory
+          (setq wintersmith/attachments-prefix (file-name-directory (directory-file-name wintersmith/attachments-suffix)))
+          ;; the top-level attachment directory name (eg. "/data")
+          (setq wintersmith/attachments-top-level (file-name-directory (directory-file-name wintersmith/attachments-prefix)))
 
-          (message (concat "copying " attachments-suffix " to " target-asset-dir))
-          (copy-directory attachments-suffix target-asset-dir t t t))
+          (setq wintersmith/target-asset-dir (concat wintersmith/asset-dir
+                                         "/" (wintersmith/basename wintersmith/attachments-top-level)
+                                         "/" (wintersmith/basename wintersmith/attachments-prefix)
+                                         "/" (wintersmith/basename wintersmith/attachments-suffix)))
+
+          (message (concat "Copying " wintersmith/attachments-suffix " to " wintersmith/target-asset-dir))
+          (copy-directory wintersmith/attachments-suffix wintersmith/target-asset-dir t t t))
 
         (let ((subtree-content
                (save-restriction
@@ -414,10 +430,18 @@ And transforms anything that's not alphanumeric into dashes."
         ;; Remove all punctuation since quotes won't be removed by word class
         (replace-regexp-in-string
          "[[:punct:]]+" ""
-         ;; trim
-         (string-trim
-          (replace-regexp-in-string
-           "(.*)" "" name))))))))
+         ;; Some of the puncutation /should/ be converted to dashes. We'll
+         ;; convert them to spaces here, so that higher nested ops (punct
+         ;; replacement) don't remove them completed.
+         ;;
+         ;; Spaces will get converted to dashes later on, so by converting them
+         ;; here, we guarantee they will become dashes.
+         (replace-regexp-in-string
+          "[-_]" " "
+          ;; trim
+          (string-trim
+           (replace-regexp-in-string
+            "(.*)" "" name)))))))))
 
 (defun wintersmith/export-all (dont-show wintersmith/asset-dir wintersmith/blog-dir wintersmith/blog-base-url wintersmith/base-regexp wintersmith/export-all-constraint &optional dont-validate)
   "Export all subtrees that are *not* tagged with :noexport: to
@@ -426,7 +450,6 @@ separate files.
 Subtrees that do not have the :EXPORT_FILE_NAME: property set
 are exported to a filename derived from the headline text."
   (interactive)
-  (message "export-all now running...")
   (save-excursion
     ;; (set-mark (point-min))
     ;;  (goto-char (point-max))
