@@ -53,12 +53,12 @@
 ;; niteLite.io - music
 ;;
 
-(defcustom nitelite/asset-dir (expand-file-name "~/Dropbox/hackBytes/byronsanchez/blogs/blogs-nitelite/contents/assets/")
+(defcustom nitelite/asset-dir (expand-file-name "~/Dropbox/hackBytes/Projects/byronsanchez/blogs/blogs-nitelite/contents/assets/")
   "Directory to store attachment assets."
   :type 'directory
   :group 'nitelite)
 
-(defcustom nitelite/blog-dir (expand-file-name "~/Dropbox/hackBytes/byronsanchez/blogs/blogs-nitelite/contents/")
+(defcustom nitelite/blog-dir (expand-file-name "~/Dropbox/hackBytes/Projects/byronsanchez/blogs/blogs-nitelite/contents/")
   "Directory to save posts."
   :type 'directory
   :group 'nitelite)
@@ -91,12 +91,12 @@ Will be stripped from links addresses on the final HTML."
 ;; hackBytes.io - software
 ;;
 
-(defcustom hackbytes/asset-dir (expand-file-name "~/Dropbox/hackBytes/byronsanchez/blogs/blogs-hackbytes/contents/assets/")
+(defcustom hackbytes/asset-dir (expand-file-name "~/Dropbox/hackBytes/Projects/byronsanchez/blogs/blogs-hackbytes/contents/assets/")
   "Directory to store attachment assets."
   :type 'directory
   :group 'nitelite)
 
-(defcustom hackbytes/blog-dir (expand-file-name "~/Dropbox/hackBytes/byronsanchez/blogs/blogs-hackbytes/contents/")
+(defcustom hackbytes/blog-dir (expand-file-name "~/Dropbox/hackBytes/Projects/byronsanchez/blogs/blogs-hackbytes/contents/")
   "Directory to save posts."
   :type 'directory
   :group 'nitelite)
