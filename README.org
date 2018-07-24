@@ -1,5 +1,8 @@
 * ox-jekyll-subtree 
 
+**Adapted from https://github.com/Malabarba/ox-jekyll-subtree**
+**License:** GPLv3
+
 Extension to ox-jekyll for better export of subtrees. This is only possible
 thanks to =ox-jekyll=, from the [[https://github.com/yoshinari-nomura/org-octopress][org-octopress]] repo (a copy is provided in this
 repo).
